@@ -15,6 +15,8 @@ import AllTask from "./AllTask";
 
 const url = "http://localhost:8000/tasks";
 
+let initialTitle = undefined;
+
 export default function Tasks() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -101,8 +103,7 @@ export default function Tasks() {
 
   async function editData(payload) {
     try {
-      const checkTitle = await checkIfTitleAlreadyExist();
-      if (!checkTitle) {
+      if (initialTitle === payload.title) {
         axios
           .put(`${url}/${id}`, payload, {
             headers: {
@@ -110,8 +111,6 @@ export default function Tasks() {
             },
           })
           .then((response) => {
-            const { status, data } = response;
-            console.log("Status", status, data);
             resetAllFields();
             toast.success("Data updated succesfully!");
             setIsEditActive(false);
@@ -121,6 +120,26 @@ export default function Tasks() {
             toast.error(errors.common);
             console.log("Error in editing data", err);
           });
+      } else {
+        const checkTitle = await checkIfTitleAlreadyExist();
+        if (!checkTitle) {
+          axios
+            .put(`${url}/${id}`, payload, {
+              headers: {
+                "Content-Type": "application/json",
+              },
+            })
+            .then((response) => {
+              resetAllFields();
+              toast.success("Data updated succesfully!");
+              setIsEditActive(false);
+              prepareAllTasksData();
+            })
+            .catch((err) => {
+              toast.error(errors.common);
+              console.log("Error in editing data", err);
+            });
+        }
       }
     } catch (error) {
       toast.error(errors.common);
@@ -145,6 +164,7 @@ export default function Tasks() {
       });
   }
   function handleEditPress(row) {
+    initialTitle = row?.title;
     setId(row?.id);
     setTitle(row?.title);
     setDescription(row?.description);
@@ -158,6 +178,7 @@ export default function Tasks() {
     setDescription("");
     setStatus("");
     setId(null);
+    initialTitle = undefined;
   }
 
   useEffect(() => {
